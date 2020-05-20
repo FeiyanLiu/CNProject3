@@ -1,27 +1,62 @@
 #include <bits/stdc++.h>
 #include <Winsock2.h>
 #include <stdio.h>
+#include <thread>
 #include "udp.h"
 #pragma comment(lib,"ws2_32.lib")
 
 #define format_login "Log:"
-#define format_check "Cck:"
 #define format_sendkey "key:"
+#define format_quit "Qut:"
+#define format_pulse "tim:"
 
+
+//0:正常登录		1:不存在		2:重连且需验证	3:无序列号	4:密码错误	5:服务器满员		6:重连且不需验证
+#define format_Logcheck "Lck:"
+
+//0:正常登录		1：不存在	2：序列号满人
+#define format_Keycheck "Cck:"
 
 #define format_correct "Cor"
 
 #define Key_file "keydata.txt"
 
+
+
 using namespace std;
 
-const int maxn = 1e5 + 5;
+
+const int cycle_res_time = 10;//每次回复周期 单位为s
+
 
 struct Key
 {
 	string val;
 	int online, maxline;
-}Key_list[maxn];
+	Key() {};
+	Key(string v, int o, int m) : val(v), online(o), maxline(m) {};
+};
+
+struct user
+{
+	string username;
+	string password;
+	string userkey;
+	bool is_check;
+	bool is_online;
+
+	user() {};
+
+	user(string name, string pass, string key, bool check, bool online)
+		: username(name), password(pass), userkey(key), is_check(check), is_online(online) {};
+}myself;
+
+//发送格式化信息
+void sendmsg(string format, int k)
+{
+	string ret = format + (char)('0' + k);
+	Sendto(ret);
+}
 
 bool strcmp(string a, string b, int k)
 {
@@ -32,122 +67,199 @@ bool strcmp(string a, string b, int k)
 	return 1;
 }
 
-void login()//登录
+string recvmsg(string format)
 {
-	void main_screen();
-	string username;
-	string password;
-	string check_key;
 	string rcv;
-	bool is_checked = false;
-
-
-	cout << "输入用户名：";
-	cin >> username;
-	cout << "输入密码：";
-	cin >> password;
-
-	//先检验是否已经检验过了
-	Sendto(format_login + username + ":" + password);
-
 	rcv.clear();
-	rcv = Recvfrom();
-	while (!strcmp(rcv, format_check, 4))
+	while (!strcmp(rcv, format, 4))
 		rcv = Recvfrom();
-	is_checked = rcv[4] - '0';
-
-	if (!is_checked)//检验失败、未检验
-	{
-		cout << "输入得到的序列码（输入 -[数字] 表示为申请 数字*10的人数类型的序列码，最多50人）：";
-		cin >> check_key;
-
-		while (check_key.size() == 2 && check_key[0] == '-' && (check_key[1] <= '0' || check_key[1] > '5'))
-		{
-			cout << "输入得到的序列码（输入 -[数字] 表示为申请 数字*10的人数类型的序列码，最多50人）：";
-			cin >> check_key;
-		}
-		/*while (check_key.size()!=2)
-		{
-			cout << "序列码错误，请重新输入序列码：";
-			cin >> check_key;
-		}*/
-
-
-		/* ↓ 发送序列码给服务端检验 ↓ */
-		Sendto(format_sendkey + username + ":" + password + ":" + check_key);
-
-
-
-		/* ↑ 发送序列码给服务端检验 ↑ */
-
-		while (!is_checked)
-		{
-			rcv.clear();
-			while (!strcmp(rcv, format_check, 4))
-				rcv = Recvfrom();
-			is_checked = rcv[4] - '0';
-			if (is_checked)
-				break;
-			
-
-			cout << "校验失败，序列码错误，请重新输入序列码：";
-			cin >> check_key;
-			/* ↓ 发送序列码给服务端检验 ↓ */
-
-			Sendto(format_sendkey + username + ":" + password + ":" + check_key);
-	
-			/* ↑ 发送序列码给服务端检验 ↑ */
-
-		}
-	}
-	
-	//检验成功，进入主界面
-
-
-
-	cout << "校验成功" << endl;
-	main_screen();
-
-	
+	return rcv;
 }
 
 
 
+void init()
+{
+	myself.username.clear();
+	myself.password.clear();
+	myself.userkey.clear();
+	myself.is_check = 0;
+	myself.is_online = 0;
+}
+
+
+void login()//登录
+{
+	string rcv;
+	int logmsg = -1;
+
+
+	cout << "输入用户名：";
+	cin >> myself.username;
+	cout << "输入密码：";
+	cin >> myself.password;
+
+	//发送登录请求
+	Sendto(format_login + myself.username + ":" + myself.password);
+
+	rcv = recvmsg(format_Logcheck);
+	logmsg = rcv[4] - '0';
+
+	switch (logmsg)
+	{
+	case 1:
+		myself.is_online = 1;
+		cout << "已创建新用户，账号：" << myself.username << "密码：" << myself.password << endl;
+		break;
+	case 2:
+		myself.is_online = 1;
+		cout << "用户已重连" << endl;
+		break;
+	case 3:
+		myself.is_online = 1;
+		cout << "已登录，该用户暂缺序列号" << endl;
+		break;
+	case 4:
+		cout << "密码错误，请重试" << endl;
+		break;
+	case 5:
+		cout << "服务器已满人，请稍后再试" << endl;
+		break;
+	case 6:
+		myself.is_check = 1;
+		myself.is_online = 1;
+		cout << "用户已重连" << endl;
+		break;
+	case 0:
+		myself.is_online = 1;
+		myself.is_check = 1;
+		cout << "登录成功！" << endl;
+		break;
+	default:
+		cout << "信息异常，服务器已崩溃" << endl;
+		break;
+	}
+}
+
+
+void check_key()
+{
+	string inkey;
+	inkey.clear();
+	while (!((inkey.size() == 2 && inkey[0] == '-' && inkey[1] >= '1' && inkey[1] <= '5') || (inkey.size() == 10)))
+	{
+		if (inkey.size()) cout << "输入格式错误！\n";
+		cout << "输入得到的(10位)序列码（输入 -[数字] 表示为申请 数字*10的人数类型的序列码，最多50人）：";
+		cin >> inkey;
+	}
+
+
+	/* ↓ 发送序列码给服务端检验 ↓ */
+	Sendto(format_sendkey + myself.username + ":" + inkey);
+
+	/* ↑ 发送序列码给服务端检验 ↑ */
+
+	string rcv;
+	int keymsg = -1;
+	rcv = recvmsg(format_Keycheck);
+	keymsg = rcv[4] - '0';
+
+	cout << rcv << endl;
+	switch (keymsg)
+	{
+	case 1:
+		cout << "该序列号不存在" << endl;
+		break;
+	case 2:
+		cout << "该序列号使用人数已满" << endl;
+		break;
+	case 0:
+		myself.is_check = 1;
+		if (rcv.size() > 5)
+		{
+			for (int i = 6; i < 16; i++)
+				myself.userkey.push_back(rcv[i]);
+			cout << "申请序列号成功：" << myself.userkey << endl;
+		}
+		else
+		{
+			myself.userkey = inkey;
+			cout << "绑定序列号成功" << endl;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+
+//已完成
 void ask_for_key()//申请票据
 {
-
+	
 
 
 }
 
 void return_key()//返回票据--正常退出
-{ 
-
-
-
+{
+	Sendto(format_quit + myself.username);
+	myself.is_online = 0;
 }
+
+void comfirm_online()//计时
+{
+	while (1)
+	{
+		cout << "online!" << endl;
+		Sendto(format_pulse + myself.username);
+		time_t start_time;
+		time(&start_time);
+		time_t end_time;
+		time(&end_time);
+		while (difftime(end_time ,start_time) != cycle_res_time)
+		{
+			time(&end_time);
+		}
+	}
+}
+
+
 
 void main_screen()//主界面
 {
+	
+	thread time_count(comfirm_online);
+	
 	cout << "欢迎使用本软件，输入QUIT退出程序！" << endl;
 	string cmd;
 	cin >> cmd;
 	while (cmd.compare("QUIT") != 0 && cmd.compare("quit") != 0)
-	{
 		cin >> cmd;
-	}
+
+	time_count.detach();
+	TerminateThread(time_count.native_handle(),0);
+	
+
 	return_key();//归还票据
 	cout << "程序正常退出，向服务器归还票据" << endl;
+	return;
 }
 
 
 int main()
 {
-	
 
 	Bind();
-	
-login();
+
+	init();
+
+	while (!myself.is_online) login();
+
+	while (!myself.is_check) check_key();
+
+	main_screen();
+
 
 	Close();
 }
