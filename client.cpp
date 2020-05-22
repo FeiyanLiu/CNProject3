@@ -2,7 +2,7 @@
 #include <Winsock2.h>
 #include <stdio.h>
 #include <thread>
-#include "udp.h"
+#include "udp_client.h"
 #pragma comment(lib,"ws2_32.lib")
 
 #define format_login "Log:"
@@ -26,7 +26,7 @@
 using namespace std;
 
 
-const int cycle_res_time = 10;//每次回复周期 单位为s
+const int cycle_res_time = 10*60;//每次回复周期 单位为s
 
 
 struct Key
