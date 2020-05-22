@@ -3,7 +3,7 @@
 #include <Winsock2.h>
 #include <thread>
 #include <stdio.h>
-#include "udp.h"
+#include "udp_server.h"
 #pragma comment(lib,"ws2_32.lib")
 
 #define ip_server "127.0.0.1"
@@ -22,7 +22,7 @@
 #define format_quit "Qut:"
 
 
-const int Max_Res_Time = 30;//最长等待反馈时间 单位为s
+const int Max_Res_Time = 30*60;//最长等待反馈时间 单位为s
 
 using namespace std;
 
@@ -74,7 +74,7 @@ int sum[10] = { 10, 20, 30, 40, 50 };
 
 void init()
 {
-	maxuser = 3;
+	maxuser = 20;
 	nowuser = 0;
 	key_sum = 0;
 	uesr_sum = 0;
@@ -133,7 +133,7 @@ void add_user(user utmp)
 void add_key(Key ktmp)
 {
 	Key_list.push_back(ktmp);
-	usermp[ktmp.val] = ++key_sum;
+	keymp[ktmp.val] = ++key_sum;
 }
 
 //检查序列号
