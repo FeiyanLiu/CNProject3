@@ -1,10 +1,12 @@
 #pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include "udp.h"
+#include "udp_client.h"
  
 char tmp[100];
 void Bind()
 {
+	std::cout << "ÇëÊäÈë¶Ë¿Ú£º" << std::endl;
+	std::cin >> srcPORT;
 	int err;
 	wVersionRequested = MAKEWORD(1, 1);
 
