@@ -112,16 +112,17 @@ int main(int argc, char** argv)
 		}
 
 
+
 		break;
 
 
 
 	case 4:
 		cout << "密码错误，请重试" << endl;
-		break;
+		return 0;
 	case 5:
 		cout << "服务器已满人，请稍后再试" << endl;
-		break;
+		return 0;
 	case 6:
 		cout << "已有序列码！同一用户不可再申请序列码" << endl;
 		break;
