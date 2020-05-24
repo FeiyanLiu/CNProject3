@@ -41,14 +41,17 @@ string recvmsg(string format)
 	rcv.clear();
 	while (!strcmp(rcv, format, 4))
 		rcv = Recvfrom();
-	//cout << rcv << endl;
+
 	return rcv;
 }
 
 
 int main(int argc, char** argv)
 {
-	if (argc < 3) { cout<<"请检查输入！"<<endl; return 0; }
+	int status = 0;//0为注册，1为购买
+	if (argc == 4) { status = 1; }
+	else if (argc == 3) { status = 0; }
+	else { cout << "检查输入!用户名或密码不能为空！" << endl; return 0; }
 	if (strlen(argv[1]) == 0)
 	{
 		cout << "用户名不能为空" << endl;
@@ -59,9 +62,12 @@ int main(int argc, char** argv)
 		cout << "密码不能为空" << endl;
 		return 0;
 	}
+
+
 	string username = argv[1];
 	string password = argv[2];
-	int c = atol(argv[3]);
+	int c=0;
+	if(status==1)c= atol(argv[3]);
 	Bind();
 	
 	//发送登录请求
@@ -89,31 +95,44 @@ int main(int argc, char** argv)
 	{
 	case 1:
 		
-		cout << "已创建新用户，账号：" << username << "密码：" << password << endl;
+		cout << "已创建新用户，账号：" << username <<" "<< "密码：" << password << endl;
+		if (status == 0)break;
 		
 	case 2:
+		if (status == 0)
+		{
+			cout << "账户已存在"<< endl;
+			break;
+		}
 	case 3:
 
-		Sendto(format_sendkey + username + ":" + inkey);
-	
-		rcv = recvmsg(format_Keycheck);
-		keymsg = rcv[4] - '0';
-
-		userkey.clear();
-		if (keymsg == 0)
+		if (status == 1)
 		{
-			if (rcv.size() > 5)
+			Sendto(format_sendkey + username + ":" + inkey);
+			rcv = recvmsg(format_Keycheck);
+			keymsg = rcv[4] - '0';
+
+			userkey.clear();
+			if (keymsg == 0)
 			{
-				for (int i = 6; i < 16; i++)
-					userkey.push_back(rcv[i]);
-				cout << "申请序列号成功：" << userkey << endl;
+				if (rcv.size() > 5)
+				{
+					for (int i = 6; i < 16; i++)
+						userkey.push_back(rcv[i]);
+					cout << "申请序列号成功：" << userkey << endl;
+				}
+
 			}
-				
+			break;
+		}
+		else 
+		if (status == 0)
+		{
+			cout << "账户已存在" << endl;
+			break;
 		}
 
-
-
-		break;
+		
 
 
 
@@ -124,10 +143,19 @@ int main(int argc, char** argv)
 		cout << "服务器已满人，请稍后再试" << endl;
 		return 0;
 	case 6:
+		if (status == 0)
+		{
+			cout << "账户已存在" << endl;
+			break;
+		}
 		cout << "已有序列码！同一用户不可再申请序列码" << endl;
 		break;
 	case 0:
-		
+		if (status == 0)
+		{
+			cout << "账户已存在" << endl;
+			break;
+		}
 		cout << "已有序列码！同一用户不可再申请序列码" << endl;
 		break;
 	default:
