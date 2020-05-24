@@ -164,7 +164,6 @@ void check_key()
 	rcv = recvmsg(format_Keycheck);
 	keymsg = rcv[4] - '0';
 
-	cout << rcv << endl;
 	switch (keymsg)
 	{
 	case 1:
@@ -193,13 +192,6 @@ void check_key()
 }
 
 
-//已完成
-void ask_for_key()//申请票据
-{
-	
-
-
-}
 
 void return_key()//返回票据--正常退出
 {
@@ -211,7 +203,7 @@ void comfirm_online()//计时
 {
 	while (1)
 	{
-		cout << "online!" << endl;
+		cout << "发送在线信息!" << endl;
 		Sendto(format_pulse + myself.username);
 		time_t start_time;
 		time(&start_time);
@@ -230,7 +222,7 @@ void main_screen()//主界面
 {
 	
 	thread time_count(comfirm_online);
-	
+	cout << "***************************************" << endl;
 	cout << "欢迎使用本软件，输入QUIT退出程序！" << endl;
 	string cmd;
 	cin >> cmd;

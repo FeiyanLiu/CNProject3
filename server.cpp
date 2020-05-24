@@ -92,33 +92,54 @@ void init()
 
 	in = ifstream(User_file);
 	user utmp;
+	nowuser = 0;
 	while (in >> utmp.username >> utmp.password >> utmp.is_check >> utmp.is_online >> utmp.userkey >> utmp.last_time)
 	{
 		user_list.push_back(utmp);
 		usermp[utmp.username] = ++uesr_sum;
-		if (utmp.is_online == 1 && utmp.is_check) nowuser++;
+		if (utmp.is_online == 1 && utmp.is_check == 1) nowuser++;
 	}
+	cout << "----------------------------------------" << endl;
 	cout << "当前线上用户有：" << nowuser << endl;
+	int index = 0;
+	for (int i = 1; i < user_list.size(); i++)
+	{
+		if (user_list[i].is_online == 1)
+			cout << ++index << ":" << user_list[i].username << endl;
+	}
+
 }
+
 
 void flush()
 {
+	nowuser = 0;
 	ofstream out = ofstream(User_file);
 	for (int i = 1; i < user_list.size(); i++)
+	{
 		out << user_list[i].username << " " << user_list[i].password << " " << user_list[i].is_check
 			<< " " << user_list[i].is_online << " " << user_list[i].userkey << " " << user_list[i].last_time << endl;
+		if (user_list[i].is_check == 1 && user_list[i].is_online == 1) nowuser++;
+	}
 
 	out = ofstream(Key_file);
+	
 	for (int i = 1; i < Key_list.size(); i++)
 		out << Key_list[i].val << " " << Key_list[i].online << " " << Key_list[i].maxline << endl;
+	cout <<"----------------------------------------"<< endl;
 	cout << "当前线上用户有：" << nowuser << endl;
+	int index = 0;
+	for (int i = 1; i < user_list.size(); i++)
+	{
+		if(user_list[i].is_online==1)
+		cout << ++index << ":" << user_list[i].username << endl;
+	}
 }
 
 //发送格式化信息
 void sendmsg(string format, int k)
 {
 	string ret = format + (char)('0' + k);
-	cout << k <<" " <<ret << endl;
 	Sendto(ret);
 }
 
@@ -169,7 +190,7 @@ Key Key_From(int kind)
 //登录检查
 void login(string k)
 {
-	cout << "login!\n";
+	
 
 	if (nowuser >= maxuser)
 	{
@@ -182,8 +203,7 @@ void login(string k)
 	while (k[index] != ':') username.push_back(k[index++]);
 	index++;
 	while (index < k.size()) password.push_back(k[index++]);
-	cout << username << " " << password << endl;
-
+	cout << "用户登录：" << username << endl;
 
 	index = 0;
 	if (index = usermp[username])
@@ -196,13 +216,11 @@ void login(string k)
 			else if (user_list[index].is_online == 1 && user_list[index].is_check == 1)
 			{
 				time(&user_list[index].last_time);
-				nowuser++;
 				sendmsg(format_Logcheck, 6);
 			}
 				
 			else if (user_list[index].is_check == 1)
 			{
-				nowuser++;
 				sendmsg(format_Logcheck, 0);
 				time(&user_list[index].last_time);
 				user_list[index].is_online = 1;
@@ -226,37 +244,29 @@ void login(string k)
 //序列号检测
 void keycheck(string k)
 {
-	cout << "check!\n";
 	int index = 4;
 	string username, check_key;
-	cout << k << endl;
 	while (k[index] != ':') username.push_back(k[index++]);
 	index++;
-
 	while (index < k.size()) check_key.push_back(k[index++]);
-	cout << username << " " << check_key << endl;
+	cout << "检查序列号:"<< username << endl;
 
 	//赋予新的序列号
 	if (check_key[0] == '-')
 	{
-		cout << "give!" << endl;
+		cout << "生成序列号!" << endl;
 		Key new_key = Key_From(check_key[1] - '0');
-		cout << "finduser!\n";
 		int index = usermp[username];
 		user_list[index].userkey = new_key.val;
 		user_list[index].is_check = 1;
 		user_list[index].is_online = 1;
 		time(&user_list[index].last_time);
-		nowuser++;
 
 		Sendto(format_Keycheck + (string)"0:"+ new_key.val);
 		return;
 
 	}
 
-
-	cout << "match!\n";
-	
 	int kindex = Key_check(check_key);
 	if (kindex > 0)
 	{
@@ -268,7 +278,6 @@ void keycheck(string k)
 			user_list[uindex].is_check = 1;
 			user_list[uindex].userkey = check_key;
 			time(&user_list[uindex].last_time);
-			nowuser++;
 			sendmsg(format_Keycheck, 0);
 		}
 		else sendmsg(format_Keycheck, 2);
@@ -279,17 +288,13 @@ void keycheck(string k)
 
 void keyreturn(string k)
 {
-	cout << "return!\n";
 	int index = 4;
 	string username;
-	cout << k << endl;
-
 	while (index < k.size()) username.push_back(k[index++]);
-	cout << username << endl;
+	cout <<"用户正常退出:" <<username << endl;
 
 	index = usermp[username];
 	user_list[index].is_online = 0;
-	nowuser--;
 }
 
 void check_clock()
@@ -303,9 +308,8 @@ void check_clock()
 		{
 			if (difftime(now, user_list[i].last_time) >= Max_Res_Time && user_list[i].is_online == 1 && user_list[i].is_check == 1)
 			{
-				nowuser--;
 				user_list[i].is_online = 0;
-				cout << "offline:" << user_list[i].username << endl;
+				cout << "用户掉线:" << user_list[i].username << endl;
 				flush();
 			}
 		}
@@ -314,14 +318,11 @@ void check_clock()
 
 void time_refresh(string k)
 {
-	cout << "refresh!\n";
+	
 	int index = 4;
 	string username;
-	cout << k << endl;
-
 	while (index < k.size()) username.push_back(k[index++]);
-	cout << username << endl;
-
+	cout << "确认在线:"<<username << endl;
 	index = usermp[username];
 	time(&user_list[index].last_time);
 }
@@ -336,7 +337,6 @@ void start()
 		rcv.clear();
 
 		while (rcv.size() < 3) rcv = Recvfrom();
-		//cout << rcv << endl;
 		if (strcmp(rcv, format_login, 4)) login(rcv);
 		else if (strcmp(rcv, format_sendkey, 4)) keycheck(rcv);
 		else if (strcmp(rcv, format_quit, 4)) keyreturn(rcv);
