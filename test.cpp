@@ -8,7 +8,7 @@ using namespace std;
 #define format_sendkey "key:"
 #define format_quit "Qut:"
 #define format_pulse "tim:"
-
+#define SerErr "ERR"
 
 //0:正常登录		1:不存在		2:重连且需验证	3:无序列号	4:密码错误	5:服务器满员		6:重连且不需验证
 #define format_Logcheck "Lck:"
@@ -39,9 +39,15 @@ string recvmsg(string format)
 {
 	string rcv;
 	rcv.clear();
-	while (!strcmp(rcv, format, 4))
-		rcv = Recvfrom();
 
+	while (!strcmp(rcv, format, 4) && !strcmp(rcv, SerErr, 3))
+		rcv = Recvfrom();
+	
+	if (strcmp(rcv, SerErr, 3))
+	{
+		cout << "服务器崩溃,退出程序！\n";
+		exit(1);
+	}
 	return rcv;
 }
 

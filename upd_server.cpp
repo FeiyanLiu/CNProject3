@@ -41,7 +41,7 @@ void Bind()
 
 void Sendto(std::string message)
 {
-	std::cout << message << std::endl;
+	
 	sendto(localsock, message.c_str(), message.size() + 1, 0,
 		(SOCKADDR*)&dstaddr, sizeof(SOCKADDR));
 }
@@ -51,8 +51,7 @@ std::string Recvfrom()
 	memset(tmp, 0, sizeof(tmp));
 	
 	recvfrom(localsock, tmp, 100, 0, (SOCKADDR*)&dstaddr, &len);
-	if (tmp != NULL)
-		std::cout << tmp << std::endl;
+	
 	ret = tmp;
 	return ret;
 }

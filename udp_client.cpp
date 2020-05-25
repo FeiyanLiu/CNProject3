@@ -5,7 +5,7 @@
 char tmp[100];
 void Bind()
 {
-	std::cout << "请输入端口：" << std::endl;
+	std::cout << "请输入端口：" ;
 	std::cin >> srcPORT;
 	int err;
 	wVersionRequested = MAKEWORD(1, 1);
@@ -41,7 +41,7 @@ void Bind()
 
 void Sendto(std::string message)
 {
-	std::cout << message << std::endl;
+	
 	sendto(localsock, message.c_str(), message.size() + 1, 0,
 		(SOCKADDR*)&dstaddr, sizeof(SOCKADDR));
 }
@@ -50,11 +50,15 @@ std::string Recvfrom()
 {
 	std::string ret;
 	memset(tmp, 0, sizeof(tmp));
-	recvfrom(localsock, tmp, 100, 0, (SOCKADDR*)&dstaddr, &len);
-	if (strlen(tmp))
-		std::cout << tmp << std::endl;
+	for (int i = 0; i < 300000; i++)
+	{
+		recvfrom(localsock, tmp, 100, 0, (SOCKADDR*)&dstaddr, &len);
+		if (tmp) break;
+	}
+	
 	ret = tmp;
-	return ret;
+	if(ret.size() > 0) return ret;
+	return "ERR";
 }
 
 void Close()

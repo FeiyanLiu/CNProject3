@@ -11,6 +11,7 @@
 #define User_file "userdata.txt"
 #define format_pulse "tim:"
 #define format_login "Log:"
+#define format_Online "Onck"
 
 //0:正常登录		1:不存在		2:重连且需验证	3:无序列号	4:密码错误	5:服务器满员		6:重连且不需验证
 #define format_Logcheck "Lck:"
@@ -228,7 +229,7 @@ void login(string k)
 			else
 			{
 				sendmsg(format_Logcheck, 3);
-				user_list[index].is_online = 1;
+				
 			}
 		}
 		else sendmsg(format_Logcheck, 4);
@@ -325,6 +326,7 @@ void time_refresh(string k)
 	cout << "确认在线:"<<username << endl;
 	index = usermp[username];
 	time(&user_list[index].last_time);
+	Sendto(format_Online);
 }
 
 

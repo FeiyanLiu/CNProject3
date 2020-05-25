@@ -9,7 +9,8 @@
 #define format_sendkey "key:"
 #define format_quit "Qut:"
 #define format_pulse "tim:"
-
+#define format_Online "Onck"
+#define SerErr "ERR"
 
 //0:正常登录		1:不存在		2:重连且需验证	3:无序列号	4:密码错误	5:服务器满员		6:重连且不需验证
 #define format_Logcheck "Lck:"
@@ -27,6 +28,7 @@ using namespace std;
 
 
 const int cycle_res_time = 10*60;//每次回复周期 单位为s
+const int wait_time = 5;//最长等待回复 单位为s
 
 
 struct Key
@@ -67,12 +69,21 @@ bool strcmp(string a, string b, int k)
 	return 1;
 }
 
+
 string recvmsg(string format)
 {
 	string rcv;
 	rcv.clear();
-	while (!strcmp(rcv, format, 4))
+
+
+	while (!strcmp(rcv, format, 4) && !strcmp(rcv, SerErr, 3))
 		rcv = Recvfrom();
+	
+	if (strcmp(rcv, SerErr, 3))
+	{
+		cout << "服务器崩溃,退出程序！\n";
+		exit(1);
+	}
 	return rcv;
 }
 
@@ -205,6 +216,7 @@ void comfirm_online()//计时
 	{
 		cout << "发送在线信息!" << endl;
 		Sendto(format_pulse + myself.username);
+		recvmsg(format_Online);
 		time_t start_time;
 		time(&start_time);
 		time_t end_time;
