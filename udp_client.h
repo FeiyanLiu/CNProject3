@@ -19,7 +19,7 @@ SOCKADDR_IN localaddr;
 
 SOCKET dstsock;
 SOCKADDR_IN dstaddr;
-
+TCHAR* CharToTCHAR(const char* pChar);
 int len = sizeof(SOCKADDR);
 
 void Bind();
