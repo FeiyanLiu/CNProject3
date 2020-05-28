@@ -1,26 +1,43 @@
 #pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "udp_client.h"
- 
+char* TCHARToChar(const TCHAR* pTchar)
+{
+	char* pChar = NULL;
+#ifdef _UNICODE
+	int nLen = wcslen(pTchar) + 1;
+	pChar = new char[nLen * 2];
+	WideCharToMultiByte(CP_ACP, 0, pTchar, nLen, pChar, 2 * nLen, NULL, NULL);
+#else
+	int nLen = strlen(pTchar) + 1;
+	pChar = new char[nLen];
+	memcpy(pChar, pTchar, nLen * sizeof(char));
+#endif
+	return pChar;
+}
 char tmp[100];
 void Bind()
 {
-	std::cout << "«Î ‰»Î∂Àø⁄£∫" ;
-	std::cin >> srcPORT;
+
+        TCHAR s[10];
+	InputBox(s, 10, _T("ËØ∑ËæìÂÖ•Á´ØÂè£Âè∑"));
+	sscanf_s(TCHARToChar(s), "%d", &srcPORT);
+	//std::cout << "ËØ∑ËæìÂÖ•Á´ØÂè£Ôºö" ;
+	//std::cin >> srcPORT;
 	int err;
 	wVersionRequested = MAKEWORD(1, 1);
 
 	err = WSAStartup(wVersionRequested, &wsaData);
 	if (err != 0)
 	{
-		std::cout << "¥¥Ω®WSADATA ß∞‹\n";
+		std::cout << "ÂàõÂª∫WSADATAÂ§±Ë¥•\n";
 		return;
 	}
 
 	if (LOBYTE(wsaData.wVersion) != 1 ||
 		HIBYTE(wsaData.wVersion) != 1)
 	{
-		std::cout << "WSADATA∞Ê±æ¥ÌŒÛ\n";
+		std::cout << "WSADATAÁâàÊú¨ÈîôËØØ\n";
 		WSACleanup();
 		return;
 	}
