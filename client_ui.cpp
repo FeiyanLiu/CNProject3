@@ -87,7 +87,7 @@ string recvmsg(string format)
 	
 	if (strcmp(rcv, SerErr, 3))
 	{
-		cout << "服务器崩溃,退出程序！\n";
+		//cout << "服务器崩溃,退出程序！\n";
 		exit(1);
 	}
 	return rcv;
@@ -143,7 +143,7 @@ string login()//登录
 		//cout << "已登录，该用户暂缺序列号" << endl;
 		break;
 	case 4:
-		feedback = "密码错误，请重试";
+		feedback = "密码错误，请重新登陆";
 		//cout << "密码错误，请重试" << endl;
 		break;
 	case 5:
@@ -167,11 +167,85 @@ string login()//登录
 		//cout << "信息异常，服务器已崩溃" << endl;
 		break;
 	}
+	if (myself.is_online != 1) {
+		short win_width, win_height;//定义窗口的宽度和高度
+		win_width = 300; win_height = 200;
+		RECT R = { r[0],r[1],r[2],r[3] };//按钮矩形指针
+		RECT T = { t[0],t[1],t[2],t[3] };//文本矩形指针
+		initgraph(win_width, win_height);//初始化窗口（黑屏）
+		for (int i = 0; i < 256; i += 5)
+		{
+			setbkcolor(RGB(i, i, i));//设置背景色，原来默认黑色
+			cleardevice();//清屏（取决于背景色）
+			//Sleep(15);//延时15ms
+		}
+		LOGFONT f;
+		gettextstyle(&f);					//获取字体样式
+		_tcscpy_s(f.lfFaceName, _T("宋体"));	//设置字体为宋体
+		f.lfQuality = ANTIALIASED_QUALITY;    // 设置输出效果为抗锯齿  
+		settextstyle(&f);                     // 设置字体样式
+		settextcolor(BLACK);				//BLACK在graphic.h头文件里面被定义为黑色的颜色常量
+		drawtext("确定", &R, DT_CENTER | DT_VCENTER | DT_SINGLELINE);//在矩形区域R1内输入文字，水平居中，垂直居中，单行显示
+		drawtext(feedback.c_str(), &T, DT_CENTER | DT_VCENTER | DT_SINGLELINE);//在矩形区域R1内输入文字，水平居中，垂直居中，单行显示
+		setlinecolor(BLACK);
+		rectangle(r[0], r[1], r[2], r[3]);
+		MOUSEMSG m;//鼠标指针
+		while (true)
+		{
+			//cout << state;
+			m = GetMouseMsg();//获取一条鼠标消息
+			int event = 0;
+			switch (m.uMsg)
+			{
+			case WM_MOUSEMOVE:
+				setrop2(R2_XORPEN);
+				setlinecolor(LIGHTCYAN);//线条颜色为亮青色
+				setlinestyle(PS_SOLID, 3);//设置画线样式为实现，10磅
+				setfillcolor(WHITE);//填充颜色为白色
+				if (button_judge(m.x, m.y) != 0)
+				{
+					if (event != button_judge(m.x, m.y))
+					{
+						event = button_judge(m.x, m.y);//记录这一次触发的按钮
+						fillrectangle(r[0], r[1], r[2], r[3]);//有框填充矩形（X1,Y1,X2,Y2）
+					}
+				}
+				else
+				{
+					if (event != 0)//上次触发的按钮未被修正为原来的颜色
+					{
+						fillrectangle(r[0], r[1], r[2], r[3]);//两次同或为原来颜色
+						event = 0;
+					}
+				}
+				break;
+			case WM_LBUTTONDOWN:
+				setrop2(R2_NOTXORPEN);//二元光栅——NOT(屏幕颜色 XOR 当前颜色)
+				for (int i = 0; i <= 10; i++)
+				{
+					setlinecolor(RGB(25 * i, 25 * i, 25 * i));//设置圆颜色
+					circle(m.x, m.y, 2 * i);
+					Sleep(30);//停顿30ms
+					circle(m.x, m.y, 2 * i);//抹去刚刚画的圆
+				}
+				if (button_judge(m.x, m.y)) {
+					closegraph();
+					exit(1);
+					FlushMouseMsgBuffer();//单击事件后清空鼠标消息
+				}
+				else {
+					FlushMouseMsgBuffer();//单击事件后清空鼠标消息
+				}
+				break;
+				//FlushMouseMsgBuff();//清空鼠标消息缓存区
+			}
+		}
+	}
 	return feedback;
 }
 
 
-string check_key()
+string check_key(string a)
 {
 	string inkey;
 	inkey.clear();
@@ -179,6 +253,7 @@ string check_key()
 	{
 		TCHAR s[20];
 		if (inkey.size()) InputBox(s, 20, _T("输入格式错误！"));//cout << "输入格式错误！\n";
+		else if (!a.empty()) InputBox(s, 20, a.c_str());
 		else InputBox(s, 20, _T("输入得到的(10位)序列码（输入 -[数字] 表示为申请 数字*10的人数类型的序列码，最多50人）："));
 		inkey = TCHARToChar(s);
 		memset(s, sizeof(s), 0);
@@ -200,11 +275,11 @@ string check_key()
 	switch (keymsg)
 	{
 	case 1:
-		check_result = "该序列号不存在";
+		check_result = "该序列号不存在,请重新输入";
 		//cout << "该序列号不存在" << endl;
 		break;
 	case 2:
-		check_result = "该序列号使用人数已满";
+		check_result = "该序列号使用人数已满，请重新输入新的序列号";
 		//cout << "该序列号使用人数已满" << endl;
 		break;
 	case 0:
@@ -257,7 +332,7 @@ void comfirm_online()//计时
 
 
 
-void main_screen()//主界面
+/*oid main_screen()//主界面
 {
 	
 	thread time_count(comfirm_online);
@@ -275,7 +350,7 @@ void main_screen()//主界面
 	return_key();//归还票据
 	cout << "程序正常退出，向服务器归还票据" << endl;
 	return;
-}
+}*/
 
 
 int main()
@@ -305,7 +380,7 @@ int main()
 	drawtext(t1.c_str(), &T, DT_CENTER | DT_VCENTER | DT_SINGLELINE);//在矩形区域R1内输入文字，水平居中，垂直居中，单行显示
 	Sleep(1000);
 
-	while (!myself.is_check) t2=check_key();
+	while (!myself.is_check) t2=check_key(t2);
 	cleardevice();//清屏（取决于背景色）
 	drawtext("确定", &R, DT_CENTER | DT_VCENTER | DT_SINGLELINE);//在矩形区域R1内输入文字，水平居中，垂直居中，单行显示
 	drawtext(t2.c_str(), &T, DT_CENTER | DT_VCENTER | DT_SINGLELINE);//在矩形区域R1内输入文字，水平居中，垂直居中，单行显示
@@ -315,7 +390,7 @@ int main()
 	int state = 0;
 	while (true)
 	{
-		cout << state;
+		//cout << state;
 		m = GetMouseMsg();//获取一条鼠标消息
 		int event = 0; 
 		switch (m.uMsg)
